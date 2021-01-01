@@ -9,16 +9,19 @@ using namespace std;
 class Node{
  private :
 	string data;
-	bool visit;
-	vector<char> line_num;
-	map<Node *, int> adj_list;
+	bool visit; // 해당 노드의 방문여부.
+	int cost; // 해당 노드까지의 최소비용. default는 9999(infinite)
+	vector<char> line_num; // 해당 노드를 지나가는 호선
+	map<Node *, int> adj_list; // 해당 노드의 인접리스트 (인접노드의 주소, 노드 간 거리)
 
  public :
 	Node(){
-		visit = false;}
+		visit = false;
+		cost = 9999;}
 	Node(string a){
 		data = a;	
-		visit = false;}
+		visit = false;
+		cost = 9999;}
 
 	friend class Graph;
 };
@@ -27,15 +30,18 @@ class Node{
 class Graph{
  public : 
 	vector<Node> Node_list;
-	void Add_Node(string);
-	void Add_Edge(string, string, int, int);
-	void DFS_S(string);
-	void DFS_R(string);
-	void BFS(string);
-	void Init();
-	void visit_Init();
-	bool Node_Search(string);
-	bool Adj_Search(string, string);
+	void Add_Node(string); // 노드 추가
+	void Add_Edge(string, string, int, int); // 인접노드추가 (연결할 노드1, 연결할 노드2, 호선, 노드 간 거리)
+	void DFS_S(string); // DFS stack을 이용한
+	void DFS_R(string); // DFS 재귀를 이용한
+	void BFS(string); // BFS
+	void Init(); // 초기 지하철 데이터값 입력
+	void Print();
+	void cost_Init();
+	void visit_Init(); // DFS BFS 순환 후 모든 노드 visit 값 false로 변경
+	int Shortcut(string, string); // 두 노드 간 최소비용 탐색
+	bool Node_Search(string); // string에 해당되는 노드의 존재여부 반환
+	bool Adj_Search(string, string); // string과 string이 인접하는 지 여부 반환
 	
 
 };	
@@ -174,3 +180,45 @@ bool Graph::Adj_Search(string a, string b){
 
 	return false;}
 
+int Graph::Shortcut(string a, string b){
+	Node *terminal;
+	for(int i = 0; i < Node_list.size(); i++){
+		if(Node_list[i].data == b) {terminal = &Node_list[i];}
+		}  // b(종점)의 노드 주소값 저장
+
+	if(Adj_Search(a, b)){
+		Node *ps;
+		for(int i = 0; i < Node_list.size(); i++){
+			if(Node_list[i].data == a) ps = &Node_list[i];}
+		terminal -> cost = terminal -> adj_list[ps];
+		return terminal -> cost;} // a와 b가 인접노드일 경우, b까지의 최소비용은 a와 b까지의 거리이며 최소비용 값을 return
+		
+
+	map<Node *, int>::iterator it;
+	if(!terminal -> visit){
+		terminal -> visit = true;
+		for(it = terminal -> adj_list.begin(); it != terminal -> adj_list.end(); it++){
+				if(!it -> first -> visit){
+					int *temp = new int;
+					*temp = Shortcut(a, it -> first -> data) + it -> second;
+					if(terminal -> cost > *temp) terminal -> cost = *temp;
+					delete temp;}
+			}
+
+		}	
+	return terminal -> cost;
+}
+
+void Graph::cost_Init(){
+	for(int i = 0; i < Node_list.size(); i++){
+		Node_list[i].cost = 9999;}
+}
+	
+
+
+void Graph::Print(){
+	for(int i = 0; i < Node_list.size(); i++){
+			cout << Node_list[i].data << '\t';}
+
+	cout << '\n';
+}
