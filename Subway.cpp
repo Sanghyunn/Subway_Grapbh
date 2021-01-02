@@ -1,4 +1,4 @@
-#include "station_list.h"
+#include "test_station_list.h"
 
 int main(){
     int ps = 0;

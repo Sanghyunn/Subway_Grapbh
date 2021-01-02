@@ -191,21 +191,23 @@ int Graph::Shortcut(string a, string b){
 		for(int i = 0; i < Node_list.size(); i++){
 			if(Node_list[i].data == a) ps = &Node_list[i];}
 		terminal -> cost = terminal -> adj_list[ps];
-		return terminal -> cost;} // a와 b가 인접노드일 경우, b까지의 최소비용은 a와 b까지의 거리이며 최소비용 값을 return
+		visit_Init();}
 		
 
-	map<Node *, int>::iterator it;
-	if(!terminal -> visit){
-		terminal -> visit = true;
-		for(it = terminal -> adj_list.begin(); it != terminal -> adj_list.end(); it++){
-				if(!it -> first -> visit){
-					int *temp = new int;
-					*temp = Shortcut(a, it -> first -> data) + it -> second;
-					if(terminal -> cost > *temp) terminal -> cost = *temp;
-					delete temp;}
-			}
+	else{
+		map<Node *, int>::iterator it;
+		if(!terminal -> visit){
+			for(it = terminal -> adj_list.begin(); it != terminal -> adj_list.end(); it++){
+					terminal -> visit = true;
+					if(!it -> first -> visit){
+						int *temp = new int;
+						*temp = Shortcut(a, it -> first -> data) + it -> second;
+						if(terminal -> cost > *temp) terminal -> cost = *temp;
+						delete temp;}
+					}
 
-		}	
+				}	
+		}
 	return terminal -> cost;
 }
 
