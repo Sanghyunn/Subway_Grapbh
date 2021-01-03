@@ -11,6 +11,8 @@ class Node{
 	string data;
 	bool visit; // 해당 노드의 방문여부.
 	int cost; // 해당 노드까지의 최소비용. default는 9999(infinite)
+	vector<string> route_list; // 해당 노드까지의 최소거리의 경로
+	vector<string> temp_route;
 	vector<char> line_num; // 해당 노드를 지나가는 호선
 	map<Node *, int> adj_list; // 해당 노드의 인접리스트 (인접노드의 주소, 노드 간 거리)
 
@@ -190,20 +192,29 @@ int Graph::Shortcut(string a, string b){
 		Node *ps;
 		for(int i = 0; i < Node_list.size(); i++){
 			if(Node_list[i].data == a) ps = &Node_list[i];}
-		terminal -> cost = terminal -> adj_list[ps];
-		visit_Init();}
+		cout << terminal -> data << endl;
+		if(terminal -> cost > terminal -> adj_list[ps]){ // a,b간 노드거리가 최단거리일때만 대입
+			terminal -> cost = terminal -> adj_list[ps];}		
+
+		}
 		
 
 	else{
 		map<Node *, int>::iterator it;
 		if(!terminal -> visit){
+			cout << terminal -> data << endl;
+		//	terminal -> temp_route.push_back(terminal -> data);
 			for(it = terminal -> adj_list.begin(); it != terminal -> adj_list.end(); it++){
-					terminal -> visit = true;
+					terminal -> visit = true; // terminal 지점 방문 체크
 					if(!it -> first -> visit){
 						int *temp = new int;
 						*temp = Shortcut(a, it -> first -> data) + it -> second;
-						if(terminal -> cost > *temp) terminal -> cost = *temp;
+						if(terminal -> cost > *temp){
+							terminal -> cost = *temp;}
+					//		terminal -> route_list.assign(terminal -> temp_route.begin(), terminal -> temp_route.end());} 
 						delete temp;}
+				//	terminal -> temp_route.pop_back();
+					terminal -> visit = false; // terminal 지점 방문 체크 해제 (visit 초기화)
 					}
 
 				}	
@@ -222,5 +233,5 @@ void Graph::Print(){
 	for(int i = 0; i < Node_list.size(); i++){
 			cout << Node_list[i].data << '\t';}
 
-	cout << '\n';
-}
+	cout << '\n';}
+
