@@ -39,6 +39,7 @@ class Graph{
 	void BFS(string); // BFS
 	void Init(); // 초기 지하철 데이터값 입력
 	void Print();
+	void route_Print(string);
 	void cost_Init();
 	void visit_Init(); // DFS BFS 순환 후 모든 노드 visit 값 false로 변경
 	int Shortcut(string, string); // 두 노드 간 최소비용 탐색
@@ -192,9 +193,11 @@ int Graph::Shortcut(string a, string b){
 		Node *ps;
 		for(int i = 0; i < Node_list.size(); i++){
 			if(Node_list[i].data == a) ps = &Node_list[i];}
-		cout << terminal -> data << endl;
 		if(terminal -> cost > terminal -> adj_list[ps]){ // a,b간 노드거리가 최단거리일때만 대입
-			terminal -> cost = terminal -> adj_list[ps];}		
+			terminal -> cost = terminal -> adj_list[ps];
+			terminal -> route_list.clear();
+			terminal -> route_list.push_back(terminal -> data);
+			terminal -> route_list.push_back(a);}	
 
 		}
 		
@@ -202,18 +205,18 @@ int Graph::Shortcut(string a, string b){
 	else{
 		map<Node *, int>::iterator it;
 		if(!terminal -> visit){
-			cout << terminal -> data << endl;
-		//	terminal -> temp_route.push_back(terminal -> data);
 			for(it = terminal -> adj_list.begin(); it != terminal -> adj_list.end(); it++){
 					terminal -> visit = true; // terminal 지점 방문 체크
 					if(!it -> first -> visit){
 						int *temp = new int;
 						*temp = Shortcut(a, it -> first -> data) + it -> second;
 						if(terminal -> cost > *temp){
-							terminal -> cost = *temp;}
-					//		terminal -> route_list.assign(terminal -> temp_route.begin(), terminal -> temp_route.end());} 
+							terminal -> cost = *temp;
+							terminal -> route_list.clear();
+							terminal -> route_list.push_back(terminal -> data);
+							copy(it -> first -> route_list.begin(), it -> first -> route_list.end(), back_inserter(terminal -> route_list));}
 						delete temp;}
-				//	terminal -> temp_route.pop_back();
+					if(!terminal -> temp_route.empty()) terminal -> temp_route.pop_back();
 					terminal -> visit = false; // terminal 지점 방문 체크 해제 (visit 초기화)
 					}
 
@@ -226,6 +229,21 @@ void Graph::cost_Init(){
 	for(int i = 0; i < Node_list.size(); i++){
 		Node_list[i].cost = 9999;}
 }
+
+void Graph::route_Print(string b){
+	Node *ps;
+	for(int i = 0; i < Node_list.size(); i++){
+		if(Node_list[i].data == b) ps = &Node_list[i];}
+
+	vector<string>::iterator it;
+	for(it = ps -> route_list.end() - 1; it != ps -> route_list.begin(); it--){
+		cout << *it << " -> ";
+		ps -> route_list.pop_back();}
+	
+	cout << b << endl;
+}
+	
+	
 	
 
 

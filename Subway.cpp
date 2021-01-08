@@ -13,7 +13,8 @@ int main(){
 			case 1 :
 				cout << "출발할 지점 : "; cin >> a;
            		cout << "도착할 지점 : "; cin >> b;
-           		cout << a << "에서 " << b << "까지 \n" << subway.Shortcut(a, b) << " 만큼 걸립니다." << endl;
+           		cout << a << "에서 " << b << "까지 " << subway.Shortcut(a, b) << " 만큼 걸립니다." << endl;
+				subway.route_Print(b);
 				subway.cost_Init();
 				subway.visit_Init();
 				break;
