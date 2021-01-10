@@ -7,28 +7,39 @@ int main(){
 	subway.Init();
 
 	while(1){
-		cout << "(1) 최단시간 (2) 최소환승 (3) 프린트 (4) 종료 : "; cin >> ps;
+		cout << "\t< 네이버 길찾기 >" << endl;
+		cout << "(1) 길찾기 (2) 종료 : "; cin >> ps;
 		string a, b;
+		pair<int, int> result;
         switch(ps){
 			case 1 :
 				cout << "출발할 지점 : "; cin >> a;
            		cout << "도착할 지점 : "; cin >> b;
+
+				cout << "\n\t< 최 단 경 로 >" << endl;
            		cout << a << "에서 " << b << "까지 " << subway.Shortcut(a, b) << " 만큼 걸립니다." << endl;
 				subway.route_Print(b);
 				subway.cost_Init();
 				subway.visit_Init();
+
+
+
+
+				cout << "\n\t< 최 소 환 승 >" << endl;
+				result = subway.Minimum_Trans(a, b);
+           		cout << a << "에서 " << b << "까지 " << result.first << " 만큼 걸립니다. (" << result.second << "번 환승)" << endl;
+				subway.route_Print(b);
+				subway.cost_Init();
+				subway.visit_Init();
+
+				cout << '\n';
 				break;
-            
 
-			case 2:
+			case 2 :
 				break;
-
-			case 3 :
-				subway.Print();
-				break;}
-
-
-        if(ps == 4) break;
+			}
+        
+		if(ps == 2) break;
     }
 
     cout << "프로그램 종료" << endl;

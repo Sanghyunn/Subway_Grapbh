@@ -1,8 +1,9 @@
 #include <vector>
 #include <iostream>
 #include <stack>
-#include <queue>
+#include <queue> 
 #include <map>
+#include "line_color.h"
 
 using namespace std;
 
@@ -11,19 +12,23 @@ class Node{
 	string data;
 	bool visit; // 해당 노드의 방문여부.
 	int cost; // 해당 노드까지의 최소비용. default는 9999(infinite)
-	vector<string> route_list; // 해당 노드까지의 최소거리의 경로
-	vector<string> temp_route;
+	int trans_count; //
+	vector<Node *> route_list; // 해당 노드까지의 최소거리의 경로
+	vector<Node *> temp_route;
 	vector<char> line_num; // 해당 노드를 지나가는 호선
 	map<Node *, int> adj_list; // 해당 노드의 인접리스트 (인접노드의 주소, 노드 간 거리)
 
  public :
 	Node(){
 		visit = false;
-		cost = 9999;}
+		cost = 9999;
+		trans_count = 9999;}
+
 	Node(string a){
 		data = a;	
 		visit = false;
-		cost = 9999;}
+		cost = 9999;
+		trans_count = 9999;}
 
 	friend class Graph;
 };
@@ -34,17 +39,15 @@ class Graph{
 	vector<Node> Node_list;
 	void Add_Node(string); // 노드 추가
 	void Add_Edge(string, string, int, int); // 인접노드추가 (연결할 노드1, 연결할 노드2, 호선, 노드 간 거리)
-	void DFS_S(string); // DFS stack을 이용한
-	void DFS_R(string); // DFS 재귀를 이용한
-	void BFS(string); // BFS
 	void Init(); // 초기 지하철 데이터값 입력
-	void Print();
-	void route_Print(string);
 	void cost_Init();
-	void visit_Init(); // DFS BFS 순환 후 모든 노드 visit 값 false로 변경
-	int Shortcut(string, string); // 두 노드 간 최소비용 탐색
+	void visit_Init(); 
 	bool Node_Search(string); // string에 해당되는 노드의 존재여부 반환
 	bool Adj_Search(string, string); // string과 string이 인접하는 지 여부 반환
+	int Line_Search(Node *, Node *);
+	pair<int, int> Minimum_Trans(string, string); // 두 노드 간 최소환승 탐색
+	int Shortcut(string, string); // 두 노드 간 최소비용 탐색
+	void route_Print(string);
 	
 
 };	
@@ -79,85 +82,15 @@ void Graph::Add_Edge(string a, string b, int line_num, int distance){
 	Temp2 -> line_num.push_back(line_num);
 }
 
-
-void Graph::DFS_S(string a){
-	Node *ps;
-	for(int i = 0; i < Node_list.size(); i++){ // a값에 해당되는 Node 위치 찾기
-		if(Node_list[i].data == a) ps = &Node_list[i];}
-
-	stack<Node *> DFS_stack;
-
-	ps -> visit = true;
-	DFS_stack.push(ps);
-
-	while(!DFS_stack.empty()){
-		ps = DFS_stack.top();
-		cout << ps -> data << '\t';
-		DFS_stack.pop();
-		
-
-		map<Node *, int>::iterator it;
-
-		for(it = ps -> adj_list.begin(); it != ps -> adj_list.end(); it++){	
-			if(!it -> first -> visit) {
-				it -> first  -> visit = true;
-				DFS_stack.push(it -> first);}
-					
-			}
-	}
-}
-
-
-
-void Graph::DFS_R(string a){
-	Node * Head;
-	for(int i = 0; i < Node_list.size(); i++){
-		if(Node_list[i].data == a) Head = &Node_list[i];}
-
-	
-	Node *ps = Head;
-
-	if(!ps -> visit){
-		ps -> visit = true;
-		cout << ps -> data << '\t';
-
-		map<Node *, int>::iterator it;
-		for(it = ps -> adj_list.begin(); it != ps -> adj_list.end(); it++){
-			DFS_R(it -> first -> data);}
-		}
-
-}
-
-
-
-void Graph::BFS(string a){
-	Node *ps;
-	for(int i = 0; i < Node_list.size(); i++){ // a값에 해당되는 Node 위치 찾기
-		if(Node_list[i].data == a) ps = &Node_list[i];}
-
-	queue<Node *> BFS_queue;
-
-	ps -> visit = true;
-	BFS_queue.push(ps);
-
-	while(!BFS_queue.empty()){
-		ps = BFS_queue.front();
-		cout << ps -> data << '\t';
-		BFS_queue.pop();
-		
-
-		map<Node *, int>::iterator it;
-		for(it = ps -> adj_list.begin(); it != ps -> adj_list.end(); it++){
-			if(it -> first -> visit) {
-				it -> first  -> visit = true;
-				BFS_queue.push(it -> first);}
-			}
-	}
-}
-
 void Graph::visit_Init(){
 	for(int i = 0; i < Node_list.size(); i++){
 		Node_list[i].visit = false;}
+}
+
+void Graph::cost_Init(){
+	for(int i = 0; i < Node_list.size(); i++){
+		Node_list[i].cost = 9999;
+		Node_list[i].trans_count = 9999;}
 }
 
 
@@ -183,6 +116,8 @@ bool Graph::Adj_Search(string a, string b){
 
 	return false;}
 
+
+
 int Graph::Shortcut(string a, string b){
 	Node *terminal;
 	for(int i = 0; i < Node_list.size(); i++){
@@ -193,11 +128,13 @@ int Graph::Shortcut(string a, string b){
 		Node *ps;
 		for(int i = 0; i < Node_list.size(); i++){
 			if(Node_list[i].data == a) ps = &Node_list[i];}
+
 		if(terminal -> cost > terminal -> adj_list[ps]){ // a,b간 노드거리가 최단거리일때만 대입
 			terminal -> cost = terminal -> adj_list[ps];
 			terminal -> route_list.clear();
-			terminal -> route_list.push_back(terminal -> data);
-			terminal -> route_list.push_back(a);}	
+			terminal -> route_list.push_back(terminal);
+			terminal -> route_list.push_back(ps);}
+			
 
 		}
 		
@@ -213,7 +150,7 @@ int Graph::Shortcut(string a, string b){
 						if(terminal -> cost > *temp){
 							terminal -> cost = *temp;
 							terminal -> route_list.clear();
-							terminal -> route_list.push_back(terminal -> data);
+							terminal -> route_list.push_back(terminal);
 							copy(it -> first -> route_list.begin(), it -> first -> route_list.end(), back_inserter(terminal -> route_list));}
 						delete temp;}
 					if(!terminal -> temp_route.empty()) terminal -> temp_route.pop_back();
@@ -225,31 +162,108 @@ int Graph::Shortcut(string a, string b){
 	return terminal -> cost;
 }
 
-void Graph::cost_Init(){
+
+pair<int, int> Graph::Minimum_Trans(string a, string b){
+	Node *terminal;
 	for(int i = 0; i < Node_list.size(); i++){
-		Node_list[i].cost = 9999;}
+		if(Node_list[i].data == b) {terminal = &Node_list[i];}
+		}  // b(종점)의 노드 주소값 저장
+
+
+	if(Adj_Search(a, b)){
+		Node *ps;
+		for(int i = 0; i < Node_list.size(); i++){
+			if(Node_list[i].data == a) ps = &Node_list[i];}
+
+		if(terminal -> trans_count > 0) terminal -> trans_count = 0;
+
+		if(terminal -> cost > terminal -> adj_list[ps]){ // a,b간 노드거리가 최단거리일때만 대입
+			terminal -> cost = terminal -> adj_list[ps];
+			terminal -> route_list.clear();
+			terminal -> route_list.push_back(terminal);
+			terminal -> route_list.push_back(ps);}
+			
+			
+		}
+
+
+	
+	else{
+		map<Node *, int>::iterator it;
+		if(!terminal -> visit){
+			for(it = terminal -> adj_list.begin(); it != terminal -> adj_list.end(); it++){
+					terminal -> visit = true; // terminal 지점 방문 체크
+					if(!it -> first -> visit){ 
+						pair<int, int> temp; // cost, transfer count
+
+						pair<int, int> temp2;
+						temp2 = Minimum_Trans(a, it -> first -> data);
+					
+						temp.first = temp2.first + it -> second;
+						temp.second = temp2.second;
+							
+						vector<Node *>::iterator it2 = (it -> first -> route_list).begin();
+						if(Line_Search(*(it2 + 1), *it2) != Line_Search(*it2, terminal)) (temp.second)++;
+					
+						if(terminal -> trans_count > temp.second){
+							terminal -> trans_count = temp.second;
+
+							terminal -> cost = temp.first;
+							terminal -> route_list.clear();
+							terminal -> route_list.push_back(terminal);
+							copy(it -> first -> route_list.begin(), it -> first -> route_list.end(), back_inserter(terminal -> route_list));}
+	
+
+						else if(terminal -> trans_count == temp.second){
+							if(terminal -> cost > temp.first){
+								terminal -> cost = temp.first;
+								terminal -> route_list.clear();
+								terminal -> route_list.push_back(terminal);
+								copy(it -> first -> route_list.begin(), it -> first -> route_list.end(), back_inserter(terminal -> route_list));}
+							}
+						
+					if(!terminal -> temp_route.empty()) terminal -> temp_route.pop_back();
+					terminal -> visit = false; // terminal 지점 방문 체크 해제 (visit 초기화)
+							}
+					}
+
+				}	
+		}
+
+	return make_pair(terminal -> cost, terminal -> trans_count);
 }
+
+		
+
+	
+	
 
 void Graph::route_Print(string b){
 	Node *ps;
 	for(int i = 0; i < Node_list.size(); i++){
 		if(Node_list[i].data == b) ps = &Node_list[i];}
 
-	vector<string>::iterator it;
-	for(it = ps -> route_list.end() - 1; it != ps -> route_list.begin(); it--){
-		cout << *it << " -> ";
+	vector<Node *>::iterator it = ps -> route_list.end() - 1;
+	Color_Change(Line_Search(*it, *(it - 1)));
+	for(; it != ps -> route_list.begin(); it--){
+		Color_Change(Line_Search(*it, *(it - 1)));
+		cout << (*it) -> data << " -> ";
 		ps -> route_list.pop_back();}
+
+
 	
-	cout << b << endl;
+	cout << (*it) -> data << endl;
+
+	printf("%c[%d;%d;%dm",27,0,30,0); // 색상 초기화
 }
 	
 	
-	
+int Graph::Line_Search(Node *a, Node *b){
+	for(int i = 0; i < a -> line_num.size(); i++){
+		for(int j = 0; j < b -> line_num.size(); j++){
+			if(a -> line_num[i] == b -> line_num[j]) return (a -> line_num[i]);
+								}
+					}
 
-
-void Graph::Print(){
-	for(int i = 0; i < Node_list.size(); i++){
-			cout << Node_list[i].data << '\t';}
-
-	cout << '\n';}
-
+	return 0;
+}
