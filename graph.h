@@ -12,7 +12,8 @@ class Node{
 	string data;
 	bool visit; // 해당 노드의 방문여부.
 	int cost; // 해당 노드까지의 최소비용. default는 9999(infinite)
-	int trans_count; //
+	int trans_count; // 환승횟수
+	int now_line; // 현재 호선
 	vector<Node *> route_list; // 해당 노드까지의 최소거리의 경로
 	vector<Node *> temp_route;
 	vector<char> line_num; // 해당 노드를 지나가는 호선
@@ -46,7 +47,7 @@ class Graph{
 	bool Adj_Search(string, string); // string과 string이 인접하는 지 여부 반환
 	int Line_Search(Node *, Node *);
 	pair<int, int> Minimum_Trans(string, string); // 두 노드 간 최소환승 탐색
-	int Shortcut(string, string); // 두 노드 간 최소비용 탐색
+	pair<int, int> Shortcut(string, string); // 두 노드 간 최소비용 탐색
 	void route_Print(string);
 	
 
@@ -118,10 +119,10 @@ bool Graph::Adj_Search(string a, string b){
 
 
 
-int Graph::Shortcut(string a, string b){
+pair<int, int> Graph::Shortcut(string a, string b){
 	Node *terminal;
 	for(int i = 0; i < Node_list.size(); i++){
-		if(Node_list[i].data == b) {terminal = &Node_list[i];}
+		if(Node_list[i].data == b) terminal = &Node_list[i];
 		}  // b(종점)의 노드 주소값 저장
 
 	if(Adj_Search(a, b)){
@@ -130,113 +131,60 @@ int Graph::Shortcut(string a, string b){
 			if(Node_list[i].data == a) ps = &Node_list[i];}
 
 		if(terminal -> cost > terminal -> adj_list[ps]){ // a,b간 노드거리가 최단거리일때만 대입
+
+			if(terminal -> trans_count > 0) terminal -> trans_count = 0;
+
+			terminal -> now_line = Line_Search(ps, terminal);
 			terminal -> cost = terminal -> adj_list[ps];
 			terminal -> route_list.clear();
 			terminal -> route_list.push_back(terminal);
-			terminal -> route_list.push_back(ps);}
-			
-
+			terminal -> route_list.push_back(ps);
+				}
 		}
-		
 
 	else{
 		map<Node *, int>::iterator it;
-		if(!terminal -> visit){
-			for(it = terminal -> adj_list.begin(); it != terminal -> adj_list.end(); it++){
-					terminal -> visit = true; // terminal 지점 방문 체크
-					if(!it -> first -> visit){
-						int *temp = new int;
-						*temp = Shortcut(a, it -> first -> data) + it -> second;
-						if(terminal -> cost > *temp){
-							terminal -> cost = *temp;
-							terminal -> route_list.clear();
-							terminal -> route_list.push_back(terminal);
-							copy(it -> first -> route_list.begin(), it -> first -> route_list.end(), back_inserter(terminal -> route_list));}
-						delete temp;}
-					if(!terminal -> temp_route.empty()) terminal -> temp_route.pop_back();
-					terminal -> visit = false; // terminal 지점 방문 체크 해제 (visit 초기화)
+		for(it = terminal -> adj_list.begin(); it != terminal -> adj_list.end(); it++){
+				terminal -> visit = true; // terminal 지점 방문 체크
+				if(!it -> first -> visit){
+					pair<int, int> temp;
+					int *temp_time = new int;
+					int *temp_trans = new int;
+					int *temp_line = new int;
+
+					temp = Shortcut(a, it -> first -> data);
+
+					*temp_time = temp.first + it -> second;
+					*temp_trans = temp.second;
+					*temp_line = Line_Search(it -> first, terminal);
+					if(*temp_line != it -> first -> now_line){
+						*temp_time += 3;//환승 시 소요시간 3분 추가
+						(*temp_trans)++;//환승 횟수++
+							}
+
+					if(terminal -> cost > *temp_time){
+						terminal -> now_line = *temp_line;
+						terminal -> trans_count = *temp_trans;
+						terminal -> cost = *temp_time;
+						terminal -> route_list.clear();
+						terminal -> route_list.push_back(terminal);
+						copy(it -> first -> route_list.begin(), it -> first -> route_list.end(), back_inserter(terminal -> route_list));
+							}
+
+					delete temp_time;
+					delete temp_trans;
+					delete temp_line;
 					}
 
-				}	
+				if(!terminal -> temp_route.empty()) terminal -> temp_route.pop_back();
+				terminal -> visit = false; // terminal 지점 방문 체크 해제 (visit 초기화)
+				}
 		}
-	return terminal -> cost;
-}
-
-
-pair<int, int> Graph::Minimum_Trans(string a, string b){
-	Node *terminal;
-	for(int i = 0; i < Node_list.size(); i++){
-		if(Node_list[i].data == b) {terminal = &Node_list[i];}
-		}  // b(종점)의 노드 주소값 저장
-
-
-	if(Adj_Search(a, b)){
-		Node *ps;
-		for(int i = 0; i < Node_list.size(); i++){
-			if(Node_list[i].data == a) ps = &Node_list[i];}
-
-		if(terminal -> trans_count > 0) terminal -> trans_count = 0;
-
-		if(terminal -> cost > terminal -> adj_list[ps]){ // a,b간 노드거리가 최단거리일때만 대입
-			terminal -> cost = terminal -> adj_list[ps];
-			terminal -> route_list.clear();
-			terminal -> route_list.push_back(terminal);
-			terminal -> route_list.push_back(ps);}
-			
-			
-		}
-
-
-	
-	else{
-		map<Node *, int>::iterator it;
-		if(!terminal -> visit){
-			for(it = terminal -> adj_list.begin(); it != terminal -> adj_list.end(); it++){
-					terminal -> visit = true; // terminal 지점 방문 체크
-					if(!it -> first -> visit){ 
-						pair<int, int> temp; // cost, transfer count
-
-						pair<int, int> temp2;
-						temp2 = Minimum_Trans(a, it -> first -> data);
-					
-						temp.first = temp2.first + it -> second;
-						temp.second = temp2.second;
-							
-						vector<Node *>::iterator it2 = (it -> first -> route_list).begin();
-						if(Line_Search(*(it2 + 1), *it2) != Line_Search(*it2, terminal)) (temp.second)++;
-					
-						if(terminal -> trans_count > temp.second){
-							terminal -> trans_count = temp.second;
-
-							terminal -> cost = temp.first;
-							terminal -> route_list.clear();
-							terminal -> route_list.push_back(terminal);
-							copy(it -> first -> route_list.begin(), it -> first -> route_list.end(), back_inserter(terminal -> route_list));}
-	
-
-						else if(terminal -> trans_count == temp.second){
-							if(terminal -> cost > temp.first){
-								terminal -> cost = temp.first;
-								terminal -> route_list.clear();
-								terminal -> route_list.push_back(terminal);
-								copy(it -> first -> route_list.begin(), it -> first -> route_list.end(), back_inserter(terminal -> route_list));}
-							}
-						
-					if(!terminal -> temp_route.empty()) terminal -> temp_route.pop_back();
-					terminal -> visit = false; // terminal 지점 방문 체크 해제 (visit 초기화)
-							}
-					}
-
-				}	
-		}
-
 	return make_pair(terminal -> cost, terminal -> trans_count);
 }
 
-		
 
-	
-	
+
 
 void Graph::route_Print(string b){
 	Node *ps;
@@ -267,3 +215,5 @@ int Graph::Line_Search(Node *a, Node *b){
 
 	return 0;
 }
+
+
