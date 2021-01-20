@@ -22,21 +22,19 @@ int main(){
 				cout << "\n\t< 최 단 경 로 >" << endl;
            		cout << a << "에서 " << b << "까지 " << result.first << " 만큼 걸립니다. ( " << result.second << "번 환승)" << endl;
 				subway.route_Print(b);
-				subway.cost_Init();
-				subway.visit_Init();
+				subway.reset();
 
 
 
 
-/*				cout << "\n\t< 최 소 환 승 >" << endl;
+				cout << "\n\t< 최 소 환 승 >" << endl;
 				result = subway.Minimum_Trans(a, b);
-           		cout << a << "에서 " << b << "까지 " << result.first << " 만큼 걸립니다. (" << result.second << "번 환승)" << endl;
+           		cout << a << "에서 " << b << "까지 " << result.first << " 만큼 걸립니다. ( " << result.second << "번 환승)" << endl;
 				subway.route_Print(b);
-				subway.cost_Init();
-				subway.visit_Init();
+				subway.reset();
 
 				cout << '\n';
- */
+ 
 				break;
 
 			case 2 :

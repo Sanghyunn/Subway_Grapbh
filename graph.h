@@ -41,8 +41,7 @@ class Graph{
 	void Add_Node(string); // 노드 추가
 	void Add_Edge(string, string, int, int); // 인접노드추가 (연결할 노드1, 연결할 노드2, 호선, 노드 간 거리)
 	void Init(); // 초기 지하철 데이터값 입력
-	void cost_Init();
-	void visit_Init(); 
+	void reset();
 	bool Node_Search(string); // string에 해당되는 노드의 존재여부 반환
 	bool Adj_Search(string, string); // string과 string이 인접하는 지 여부 반환
 	int Line_Search(Node *, Node *);
@@ -83,18 +82,16 @@ void Graph::Add_Edge(string a, string b, int line_num, int distance){
 	Temp2 -> line_num.push_back(line_num);
 }
 
-void Graph::visit_Init(){
+void Graph::reset(){
 	for(int i = 0; i < Node_list.size(); i++){
-		Node_list[i].visit = false;}
-}
-
-void Graph::cost_Init(){
-	for(int i = 0; i < Node_list.size(); i++){
+		Node_list[i].visit = false;
 		Node_list[i].cost = 9999;
-		Node_list[i].trans_count = 9999;}
+		Node_list[i].trans_count = 9999;
+		Node_list[i].now_line = 0;
+ 		Node_list[i].route_list.clear();
+		Node_list[i].temp_route.clear();}
+
 }
-
-
 
 bool Graph::Node_Search(string b){
 	for(int i = 0; i < Node_list.size(); i++){
@@ -185,6 +182,72 @@ pair<int, int> Graph::Shortcut(string a, string b){
 
 
 
+
+pair<int, int> Graph::Minimum_Trans(string a, string b){
+	Node *terminal;
+	for(int i = 0; i < Node_list.size(); i++){
+		if(Node_list[i].data == b) terminal = &Node_list[i];
+		}  // b(종점)의 노드 주소값 저장
+
+	if(Adj_Search(a, b)){
+		Node *ps;
+		for(int i = 0; i < Node_list.size(); i++){
+			if(Node_list[i].data == a) ps = &Node_list[i];}
+
+		if(terminal -> cost > terminal -> adj_list[ps]){ // a,b간 노드거리가 최단거리일때만 대입
+
+			if(terminal -> trans_count > 0) terminal -> trans_count = 0;
+
+			terminal -> now_line = Line_Search(ps, terminal);
+			terminal -> cost = terminal -> adj_list[ps];
+			terminal -> route_list.clear();
+			terminal -> route_list.push_back(terminal);
+			terminal -> route_list.push_back(ps);
+				}
+		}
+
+	else{
+		map<Node *, int>::iterator it;
+		for(it = terminal -> adj_list.begin(); it != terminal -> adj_list.end(); it++){
+				terminal -> visit = true; // terminal 지점 방문 체크
+				if(!it -> first -> visit){
+					pair<int, int> temp;
+					int *temp_time = new int;
+					int *temp_trans = new int;
+					int *temp_line = new int;
+
+					temp = Minimum_Trans(a, it -> first -> data);
+
+					*temp_time = temp.first + it -> second;
+					*temp_trans = temp.second;
+					*temp_line = Line_Search(it -> first, terminal);
+					if(*temp_line != it -> first -> now_line){
+						*temp_time += 3;//환승 시 소요시간 3분 추가
+						(*temp_trans)++;//환승 횟수++
+							}
+
+
+					if(terminal -> trans_count > *temp_trans || (terminal -> trans_count == *temp_trans && terminal -> cost > *temp_time)){
+						terminal -> now_line = *temp_line;
+						terminal -> trans_count = *temp_trans;
+						terminal -> cost = *temp_time;
+						terminal -> route_list.clear();
+						terminal -> route_list.push_back(terminal);
+						copy(it -> first -> route_list.begin(), it -> first -> route_list.end(), back_inserter(terminal -> route_list));
+													}
+
+						delete temp_time;
+						delete temp_trans;
+						delete temp_line;
+								}
+							
+
+				if(!terminal -> temp_route.empty()) terminal -> temp_route.pop_back();
+				terminal -> visit = false; // terminal 지점 방문 체크 해제 (visit 초기화)
+				}
+		}
+	return make_pair(terminal -> cost, terminal -> trans_count);
+}
 
 void Graph::route_Print(string b){
 	Node *ps;
